@@ -29,6 +29,7 @@
 
 #include <algorithm> /* std::max */
 #include <type_traits>
+#include <utility>
 
 #include <boost/mpl/int.hpp>
 
@@ -393,6 +394,18 @@ public:
 };
 
 /**
+ * Class for type conversion.
+ *
+ * Used to represent explicit hardware type conversions (provides type hints in ir).
+ */
+template<int toType, int fromType, class E>
+class TypeConversionExpression: public UnaryExpressionBase<E, TypeConversionExpression<toType, fromType, E> > {
+    typedef UnaryExpressionBase<E, TypeConversionExpression<toType, fromType, E> > base_type;
+public:
+    explicit TypeConversionExpression(E expression, SmallBitSize size = 0) : base_type(std::move(expression), size) {}
+};
+
+/**
  * Class for no expression.
  */
 class NullExpression: public ExpressionBase<NullExpression> {};
@@ -581,6 +594,56 @@ typename std::enable_if<
 >::type
 truncate(E expression, SmallBitSize size = 0) {
     return UnaryExpression<ir::UnaryOperator::TRUNCATE, E>(std::move(expression), size);
+}
+
+template<class E>
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    TypeConversionExpression<ir::TypeConversion::FLOAT, ir::TypeConversion::FLOAT, E>
+>::type
+float_resize(E expression, SmallBitSize size = 0) {
+    return TypeConversionExpression<ir::TypeConversion::FLOAT, ir::TypeConversion::FLOAT, E>(std::move(expression), size);
+}
+
+template<class E>
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    TypeConversionExpression<ir::TypeConversion::FLOAT, ir::TypeConversion::SIGNED_INTEGER, E>
+>::type
+int2float(E expression, SmallBitSize size = 0) {
+    return TypeConversionExpression<ir::TypeConversion::FLOAT, ir::TypeConversion::SIGNED_INTEGER, E>(std::move(expression), size);
+}
+
+template<class E>
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    TypeConversionExpression<ir::TypeConversion::SIGNED_INTEGER, ir::TypeConversion::FLOAT, E>
+>::type
+float2int(E expression, SmallBitSize size = 0) {
+    return TypeConversionExpression<ir::TypeConversion::SIGNED_INTEGER, ir::TypeConversion::FLOAT, E>(std::move(expression), size);
+}
+
+template<class E>
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    TypeConversionExpression<ir::TypeConversion::FLOAT, ir::TypeConversion::PACKED_BCD, E>
+>::type
+bcd2float(E expression, SmallBitSize size = 0) {
+    return TypeConversionExpression<ir::TypeConversion::FLOAT, ir::TypeConversion::PACKED_BCD, E>(std::move(expression), size);
+}
+
+template<class E>
+inline
+typename std::enable_if<
+    IsExpression<E>::value,
+    TypeConversionExpression<ir::TypeConversion::PACKED_BCD, ir::TypeConversion::FLOAT, E>
+>::type
+float2bcd(E expression, SmallBitSize size = 0) {
+    return TypeConversionExpression<ir::TypeConversion::PACKED_BCD, ir::TypeConversion::FLOAT, E>(std::move(expression), size);
 }
 
 template<class L, class R>
@@ -968,6 +1031,15 @@ protected:
     template<int operatorKind, class L, class R>
     std::unique_ptr<ir::Term> doCreateTerm(BinaryExpression<operatorKind, L, R> &expression) const {
         return std::make_unique<ir::BinaryOperator>(operatorKind, createTerm(expression.left()), createTerm(expression.right()), expression.size());
+    }
+
+    /**
+     * \param expression               Type conversion expression that convert type and/or size of term.
+     * \returns                        Newly created term for the given expression.
+     */
+    template<int toType, int fromType, class E>
+    std::unique_ptr<ir::Term> doCreateTerm(TypeConversionExpression<toType, fromType, E> &expression) const {
+        return std::make_unique<ir::TypeConversion>(toType, fromType, createTerm(expression.operand()), expression.size());
     }
 
     /**

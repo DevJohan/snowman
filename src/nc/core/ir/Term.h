@@ -41,11 +41,13 @@ namespace core {
 namespace ir {
 
 class Constant;
+class ConstantFloat;
 class Intrinsic;
 class BinaryOperator;
 class Dereference;
 class MemoryLocationAccess;
 class UnaryOperator;
+class TypeConversion;
 
 class Statement;
 
@@ -61,11 +63,13 @@ public:
      */
     enum {
         INT_CONST, ///< Integer constant.
+        FLOAT_CONST, ///< Float constant.
         INTRINSIC, ///< Some special value.
         MEMORY_LOCATION_ACCESS, ///< Access to an abstract memory location.
         DEREFERENCE, ///< Dereference.
         UNARY_OPERATOR, ///< Unary operator.
         BINARY_OPERATOR, ///< Binary operator.
+        TYPE_CONVERSION ///< Type conversion.
     };
 
     /**
@@ -162,11 +166,13 @@ public:
     /* The following functions are defined in Terms.h. */
 
     inline const Constant *asConstant() const;
+    inline const ConstantFloat *asConstantFloat() const;
     inline const Intrinsic *asIntrinsic() const;
     inline const MemoryLocationAccess *asMemoryLocationAccess() const;
     inline const Dereference *asDereference() const;
     inline const UnaryOperator *asUnaryOperator() const;
     inline const BinaryOperator *asBinaryOperator() const;
+    inline const TypeConversion *asTypeConversion() const;
 
 protected:
     /**
@@ -198,10 +204,12 @@ protected:
     NC_SUBCLASS(nc::core::ir::Term, CLASS, KIND)
 
 NC_REGISTER_TERM_CLASS(nc::core::ir::Constant,             nc::core::ir::Term::INT_CONST)
+NC_REGISTER_TERM_CLASS(nc::core::ir::ConstantFloat,        nc::core::ir::Term::FLOAT_CONST)
 NC_REGISTER_TERM_CLASS(nc::core::ir::Intrinsic,            nc::core::ir::Term::INTRINSIC)
 NC_REGISTER_TERM_CLASS(nc::core::ir::MemoryLocationAccess, nc::core::ir::Term::MEMORY_LOCATION_ACCESS)
 NC_REGISTER_TERM_CLASS(nc::core::ir::Dereference,          nc::core::ir::Term::DEREFERENCE)
 NC_REGISTER_TERM_CLASS(nc::core::ir::UnaryOperator,        nc::core::ir::Term::UNARY_OPERATOR)
 NC_REGISTER_TERM_CLASS(nc::core::ir::BinaryOperator,       nc::core::ir::Term::BINARY_OPERATOR)
+NC_REGISTER_TERM_CLASS(nc::core::ir::TypeConversion,       nc::core::ir::Term::TYPE_CONVERSION)
 
 /* vim:set et sts=4 sw=4: */

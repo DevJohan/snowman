@@ -43,6 +43,16 @@ void Constant::print(QTextStream &out) const {
     out << QString(QLatin1String("0x%1")).arg(value().value(), 0, 16);
 }
 
+std::unique_ptr<Term> ConstantFloat::doClone() const {
+    return std::make_unique<ConstantFloat>(value());
+}
+
+void ConstantFloat::doCallOnChildren(const std::function<void(Term *)> &) {}
+
+void ConstantFloat::print(QTextStream &out) const {
+    out << static_cast<double>(value_);
+}
+
 std::unique_ptr<Term> Intrinsic::doClone() const {
     return std::make_unique<Intrinsic>(intrinsicKind(), size());
 }
@@ -234,6 +244,59 @@ void BinaryOperator::print(QTextStream &out) const {
             break;
     }
     out << ' ' << *right() << ')';
+}
+
+TypeConversion::TypeConversion(int toType, int fromType, std::unique_ptr<Term> operand, SmallBitSize size):
+    Term(TYPE_CONVERSION, size),
+    toType_(toType),
+    fromType_(fromType),
+    operand_(std::move(operand))
+{
+    assert(operand_ != nullptr);
+
+    if (toType == fromType) {
+        // This is not necessarily an error and could be allowed.
+        assert((size != operand_->size() || size == 0) && "Redundant type conversion of the same type and the same size");
+    }
+}
+
+std::unique_ptr<Term> TypeConversion::doClone() const {
+    return std::make_unique<TypeConversion>(toType(), fromType(), operand()->clone(), size());
+}
+
+void TypeConversion::doCallOnChildren(const std::function<void(Term *)> &fun) {
+    fun(operand());
+}
+
+void TypeConversion::print(QTextStream &out) const {
+	auto printType = [&](int type){
+	    switch (type) {
+	        case UNSIGNED_INTEGER:
+	            out << "unsigned";
+	            break;
+	        case SIGNED_INTEGER:
+	            out << "signed";
+	            break;
+	        case FLOAT:
+	            out << "float ";
+	            break;
+	        case PACKED_BCD:
+	            out << "bcd";
+	            break;
+	        case UNKNOWN:
+	            out << "unknown";
+	            break;
+	        default:
+	            unreachable();
+	            break;
+	    }
+	};
+
+	out << "conv<";
+	printType(toType());
+	out << "<-";
+	printType(fromType());
+    out << ">(" << *operand() << ")";
 }
 
 } // namespace ir

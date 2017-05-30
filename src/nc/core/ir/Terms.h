@@ -26,6 +26,7 @@
 #include <nc/config.h>
 
 #include <nc/common/SizedValue.h>
+#include <nc/common/SizedFloatValue.h>
 
 #include "Term.h"
 
@@ -58,6 +59,39 @@ public:
      * \param[in] value New value. It is truncated to the lower size() bits.
      */
     void setValue(ConstantValue value) { value_ = bitTruncate(value, size()); }
+
+    void print(QTextStream &out) const override;
+
+protected:
+    std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
+};
+
+/**
+ * Constant floating point value.
+ */
+class ConstantFloat: public Term {
+    ConstantFloatValue value_; ///< Value of the constant.
+
+public:
+    /**
+     * Class constructor.
+     *
+     * \param[in] value Value of the constant.
+     */
+    ConstantFloat(const SizedFloatValue &value): Term(FLOAT_CONST, value.size()), value_(value.value()) {}
+
+    /**
+     * \return Value of the constant.
+     */
+    SizedFloatValue value() const { return SizedFloatValue(size(), value_); }
+
+    /**
+     * Sets the value of the constant.
+     *
+     * \param[in] value New value. It is truncated to the lower size() bits.
+     */
+    void setValue(ConstantFloatValue value) { value_ = value; }
 
     void print(QTextStream &out) const override;
 
@@ -310,16 +344,77 @@ protected:
     void doCallOnChildren(const std::function<void(Term *)> &fun) override;
 };
 
+/**
+ * Type conversion.
+ */
+class TypeConversion: public Term {
+public:
+    /**
+     * Types available for conversion.
+     */
+    enum OperatorKind {
+        UNSIGNED_INTEGER, ///< Unsigned integer.
+        SIGNED_INTEGER, ///< Signed integer.
+        FLOAT, ///< Floating point number.
+        PACKED_BCD, ///< Packed binary coded decimal.
+        UNKNOWN ///< Type unknown.
+    };
+
+private:
+    int toType_; ///< Type of the result.
+    int fromType_; ///< Type to convert operand from.
+    std::unique_ptr<Term> operand_; ///< Operand.
+
+public:
+    /**
+     * Class constructor.
+     *
+     * \param[in] toType        Type to convert to.
+     * \param[in] fromType      Type to convert from (operand type).
+     * \param[in] operand       The operand of the type conversion operator.
+     * \param[in] size          Size of this term's value in bits, not necessarily same as operand size
+     */
+    TypeConversion(int toType, int fromType, std::unique_ptr<Term> operand, SmallBitSize size);
+
+    /**
+     * \return Type of the result.
+     */
+    int toType() const { return toType_; }
+
+    /**
+     * \return Type of the operator.
+     */
+    int fromType() const { return fromType_; }
+
+    /**
+     * \return Valid pointer to the operand of this operator.
+     */
+    Term *operand() { return operand_.get(); }
+
+    /**
+     * \return Valid pointer to the operand of this operator.
+     */
+    const Term *operand() const { return operand_.get(); }
+
+    void print(QTextStream &out) const override;
+
+protected:
+    std::unique_ptr<Term> doClone() const override;
+    void doCallOnChildren(const std::function<void(Term *)> &fun) override;
+};
+
 /*
  * Term implementation follows.
  */
 
 const Constant *Term::asConstant() const { return as<Constant>(); }
+const ConstantFloat *Term::asConstantFloat() const { return as<ConstantFloat>(); }
 const Intrinsic *Term::asIntrinsic() const { return as<Intrinsic>(); }
 const MemoryLocationAccess *Term::asMemoryLocationAccess() const { return as<MemoryLocationAccess>(); }
 const Dereference *Term::asDereference() const { return as<Dereference>(); }
 const UnaryOperator *Term::asUnaryOperator() const { return as<UnaryOperator>(); }
 const BinaryOperator *Term::asBinaryOperator() const { return as<BinaryOperator>(); }
+const TypeConversion *Term::asTypeConversion() const { return as<TypeConversion>(); }
 
 }}} // namespace nc::core::ir
 

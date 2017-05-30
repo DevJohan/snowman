@@ -25,25 +25,59 @@
 
 #include <nc/config.h>
 
-#include <boost/cstdint.hpp>
+#include <cassert>
+#include <cmath>
+
+#include <nc/common/BitTwiddling.h>
+#include <nc/common/Types.h>
+#include <nc/common/Unused.h>
 
 namespace nc {
 
-typedef boost::int64_t ByteAddr; ///< Signed integer for representing addresses in bytes.
-typedef boost::int64_t ByteSize; ///< Signed integer for representing sizes in bytes.
+/**
+ * Floating point value with a size.
+ */
+class SizedFloatValue {
+    /** Size of the value. */
+    SmallBitSize size_;
 
-typedef boost::int64_t BitAddr; ///< Signed integer for representing addresses in bits.
-typedef boost::int64_t BitSize; ///< Signed integer for representing sizes in bits.
+    /** The value represented as ConstantFloatValue. */
+    ConstantFloatValue value_;
 
-typedef int SmallByteSize; ///< Signed integer for representing small sizes in bytes (e.g. sizes of instructions).
+public:
+    /**
+     * Constructs a value of zero size.
+     */
+    SizedFloatValue(): size_(0), value_(0.) {}
 
-typedef int SmallBitSize; ///< Signed integer for representing small sizes in bits (e.g. sizes of registers).
+    /**
+     * Constructor.
+     *
+     * \param[in] size Size of the value.
+     * \param[in] value Value to represent.
+     */
+    SizedFloatValue(SmallBitSize size, ConstantFloatValue value):
+        size_(size),
+        value_(value)
+    {
+        assert(size >= 0);
+    }
 
-/* Note, that overflows of signed integers are undefined behaviour in C, C++. */
-typedef boost::uint64_t ConstantValue; ///< Unsigned integer for representing constant values.
-typedef boost::int64_t  SignedConstantValue; ///< Signed integer for representing constant values.
+    /**
+     * \return Size of the value.
+     */
+    SmallBitSize size() const { return size_; }
 
-typedef long double ConstantFloatValue; ///< Float type used for representing constant float values.
+    /**
+     * \return Value as represented.
+     */
+    ConstantFloatValue value() const { return value_; }
+
+    /**
+     * \return Absolute value.
+     */
+    ConstantFloatValue absoluteValue() const { return std::fabs(value_); }
+};
 
 } // namespace nc
 

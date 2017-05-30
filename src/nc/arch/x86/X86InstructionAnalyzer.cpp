@@ -85,6 +85,49 @@ temporary(SmallBitSize size) {
     return resizedRegister(X86Registers::tmp64(), size);
 }
 
+
+/**
+ * Issues instructions to represent an x87 fpu push instruction of \p value.
+ *
+ * TODO: Should probably mark all the MMX registers as undefined
+ */
+template<class E>
+typename std::enable_if<
+    core::irgen::expressions::IsExpression<typename std::remove_reference<E>::type>::value,
+    void
+>::type
+x87_fpu_push(X86ExpressionFactoryCallback& _, E&& value){
+    using core::irgen::expressions::regizter;
+    _[
+        regizter(X86Registers::st7()) ^= regizter(X86Registers::st6()),
+        regizter(X86Registers::st6()) ^= regizter(X86Registers::st5()),
+        regizter(X86Registers::st5()) ^= regizter(X86Registers::st4()),
+        regizter(X86Registers::st4()) ^= regizter(X86Registers::st3()),
+        regizter(X86Registers::st3()) ^= regizter(X86Registers::st2()),
+        regizter(X86Registers::st2()) ^= regizter(X86Registers::st1()),
+        regizter(X86Registers::st1()) ^= regizter(X86Registers::st0()),
+        regizter(X86Registers::st0()) ^= value
+    ];
+}
+
+/**
+ * Issues instructions to represent an x87 fpu pop instruction.
+ */
+void
+x87_fpu_pop(X86ExpressionFactoryCallback& _){
+    using core::irgen::expressions::regizter;
+    _[
+        regizter(X86Registers::st0()) ^= regizter(X86Registers::st1()),
+        regizter(X86Registers::st1()) ^= regizter(X86Registers::st2()),
+        regizter(X86Registers::st2()) ^= regizter(X86Registers::st3()),
+        regizter(X86Registers::st3()) ^= regizter(X86Registers::st4()),
+        regizter(X86Registers::st4()) ^= regizter(X86Registers::st5()),
+        regizter(X86Registers::st5()) ^= regizter(X86Registers::st6()),
+        regizter(X86Registers::st6()) ^= regizter(X86Registers::st7()),
+        regizter(X86Registers::st7()) ^= core::irgen::expressions::undefined()
+    ];
+}
+
 } // anonymous namespace
 
 class X86InstructionAnalyzerImpl {
@@ -504,6 +547,115 @@ public:
                         dx ^= unsigned_(ax) % sign_extend(std::move(operand0)),
                         ax ^= unsigned_(ax) / sign_extend(operand(0))
                     ];
+                }
+                break;
+            }
+            case UD_Ifbld: {
+                x87_fpu_push(_, bcd2float(operand(0)));
+
+                _[
+                    regizter(X86Registers::fpu_c0()) ^= undefined(),
+                    regizter(X86Registers::fpu_c1()) ^= intrinsic(),
+                    regizter(X86Registers::fpu_c2()) ^= undefined(),
+                    regizter(X86Registers::fpu_c3()) ^= undefined()
+                ];
+                break;
+            }
+            case UD_Ifbstp: {
+                _[
+                    operand(0) ^= float2bcd(regizter(X86Registers::st0())),
+                    regizter(X86Registers::fpu_c0()) ^= undefined(),
+                    regizter(X86Registers::fpu_c1()) ^= intrinsic(),
+                    regizter(X86Registers::fpu_c2()) ^= undefined(),
+                    regizter(X86Registers::fpu_c3()) ^= undefined()
+                  ];
+
+                x87_fpu_pop(_);
+                break;
+            }
+            case UD_Iffree: {
+                /*
+                 * ffree actually marks the register as empty in the tag register
+                 * but doesn't change the content of operand(0) (ST(i)).
+                 */
+                _[
+                    operand(0) ^= undefined(),
+                    regizter(X86Registers::fpu_c0()) ^= undefined(),
+                    regizter(X86Registers::fpu_c1()) ^= undefined(),
+                    regizter(X86Registers::fpu_c2()) ^= undefined(),
+                    regizter(X86Registers::fpu_c3()) ^= undefined()
+                  ];
+                break;
+            }
+            case UD_Ifild: {
+                x87_fpu_push(_, int2float(operand(0)));
+
+                _[
+                    regizter(X86Registers::fpu_c0()) ^= undefined(),
+                    regizter(X86Registers::fpu_c1()) ^= intrinsic(),
+                    regizter(X86Registers::fpu_c2()) ^= undefined(),
+                    regizter(X86Registers::fpu_c3()) ^= undefined()
+                ];
+                break;
+            }
+            case UD_Ifist: case UD_Ifistp: {
+                _[
+                    operand(0) ^= float2int(regizter(X86Registers::st0())),
+                    regizter(X86Registers::fpu_c0()) ^= undefined(),
+                    regizter(X86Registers::fpu_c1()) ^= intrinsic(),
+                    regizter(X86Registers::fpu_c2()) ^= undefined(),
+                    regizter(X86Registers::fpu_c3()) ^= undefined()
+                  ];
+                if (ud_obj_.mnemonic == UD_Ifistp) {
+                    x87_fpu_pop(_);
+                }
+                break;
+            }
+            case UD_Ifld: {
+                if (ud_obj_.operand[0].type == UD_OP_REG){
+                    auto tmp80 = resizedRegister(X86Registers::tmp128(),80);
+                    _[ tmp80 ^= operand(0) ];
+                    x87_fpu_push(_, tmp80);
+
+                } else {
+                    assert( ud_obj_.operand[0].type == UD_OP_MEM );
+                    if(operand(0).size() == 80){
+                        x87_fpu_push(_, operand(0));
+                    } else {
+                        x87_fpu_push(_, float_resize(operand(0)));
+                    }
+                }
+
+                _[
+                    regizter(X86Registers::fpu_c0()) ^= undefined(),
+                    regizter(X86Registers::fpu_c1()) ^= intrinsic(),
+                    regizter(X86Registers::fpu_c2()) ^= undefined(),
+                    regizter(X86Registers::fpu_c3()) ^= undefined()
+                ];
+                break;
+            }
+            case UD_Ifst: case UD_Ifstp: {
+                /**
+                 * TODO: The REG version should probably mark all the MMX registers as undefined.
+                 */
+                if(operand(0).size() == 80){
+                    _[
+                        operand(0) ^= regizter(X86Registers::st0())
+                      ];
+                } else {
+                    _[
+                        operand(0) ^= float_resize(regizter(X86Registers::st0()))
+                    ];
+                }
+
+                _[
+                    regizter(X86Registers::fpu_c0()) ^= undefined(),
+                    regizter(X86Registers::fpu_c1()) ^= intrinsic(),
+                    regizter(X86Registers::fpu_c2()) ^= undefined(),
+                    regizter(X86Registers::fpu_c3()) ^= undefined()
+                ];
+                if (ud_obj_.mnemonic == UD_Ifstp) {
+                    x87_fpu_pop(_);
                 }
                 break;
             }
