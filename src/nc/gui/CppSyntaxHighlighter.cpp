@@ -119,7 +119,11 @@ const char *cppKeywords[] = {
     "int32_t",
     "uint32_t",
     "int64_t",
-    "uint64_t"
+    "uint64_t",
+    "float16_t",
+    "float32_t",
+    "float64_t",
+    "float80_t"
 };
 
 /* Highlighter state. */

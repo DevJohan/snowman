@@ -40,6 +40,7 @@
 
 #include "Dataflow.h"
 #include "Value.h"
+#include "ArchValue.h"
 
 namespace nc {
 namespace core {
@@ -218,6 +219,15 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const ReachingDefinition
             value->makeNotReturnAddress();
             return value;
         }
+        case Term::FLOAT_CONST: {
+            auto constant = term->asConstantFloat();
+            Value *value = dataflow().getValue(constant);
+//            value->setAbstractValue(constant->value());
+            value->makeNotStackOffset();
+            value->makeNotProduct();
+            value->makeNotReturnAddress();
+            return value;
+        }
         case Term::INTRINSIC: {
             auto intrinsic = term->asIntrinsic();
             Value *value = dataflow().getValue(intrinsic);
@@ -262,6 +272,9 @@ Value *DataflowAnalyzer::computeValue(const Term *term, const ReachingDefinition
             return computeValue(term->asUnaryOperator(), definitions);
         case Term::BINARY_OPERATOR:
             return computeValue(term->asBinaryOperator(), definitions);
+        case Term::TYPE_CONVERSION: {
+            return computeValue(term->asTypeConversion(), definitions);
+        }
         default: {
             log_.warning(tr("%1: Unknown term kind: %2.").arg(Q_FUNC_INFO).arg(term->kind()));
             return dataflow().getValue(term);
@@ -535,6 +548,15 @@ Value *DataflowAnalyzer::computeValue(const BinaryOperator *binary, const Reachi
     }
 
     value->makeNotReturnAddress();
+
+    return value;
+}
+
+Value *DataflowAnalyzer::computeValue(const TypeConversion *conversion, const ReachingDefinitions &definitions) {
+    auto value = dataflow().getValue(conversion);
+    auto operandValue = computeValue(conversion->operand(), definitions);
+
+//    value->setAbstractValue(apply(conversion, operandValue->abstractValue()));
 
     return value;
 }

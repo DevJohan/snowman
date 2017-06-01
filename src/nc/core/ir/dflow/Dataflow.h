@@ -28,6 +28,7 @@
 #include <memory>
 
 #include <boost/unordered_map.hpp>
+#include <boost/variant.hpp>
 
 #include <nc/common/Range.h>
 
@@ -42,13 +43,15 @@ namespace ir {
 namespace dflow {
 
 class Value;
+class ArchValue;
 
 /**
  * This class contains results of dataflow and constant propagation and folding analysis.
  */
 class Dataflow {
+    typedef boost::variant<Value, ArchValue> GenericValueStorage;
     /** Mapping from a term to a description of its value. */
-    boost::unordered_map<const Term *, std::unique_ptr<Value>> term2value_;
+    boost::unordered_map<const Term *, std::unique_ptr<GenericValueStorage>> term2value_;
 
     /** Mapping from a term to its memory location. */
     boost::unordered_map<const Term *, MemoryLocation> term2location_;
@@ -91,12 +94,12 @@ public:
     /**
      * \return Mapping from a term to the description of its value.
      */
-    boost::unordered_map<const Term *, std::unique_ptr<Value>> &term2value() { return term2value_; }
+    boost::unordered_map<const Term *, std::unique_ptr<GenericValueStorage>> &term2value() { return term2value_; }
 
     /**
      * \return Mapping from a term to the description of its value.
      */
-    const boost::unordered_map<const Term *, std::unique_ptr<Value>> &term2value() const { return term2value_; }
+    const boost::unordered_map<const Term *, std::unique_ptr<GenericValueStorage>> &term2value() const { return term2value_; }
 
     /**
      * \param[in] term Valid pointer to a term.

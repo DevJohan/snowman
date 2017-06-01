@@ -22,57 +22,19 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "Types.h"
-
-#include <QTextStream>
-
-#include "StructTypeDeclaration.h"
+#include "ArchValue.h"
 
 namespace nc {
 namespace core {
-namespace likec {
+namespace ir {
+namespace dflow {
 
-void ErroneousType::print(QTextStream &out) const {
-    out << "<erroneous type>";
-}
+ArchValue::ArchValue(SmallBitSize size):
+    abstractValue_(size, -1, -1)
+{}
 
-void VoidType::print(QTextStream &out) const {
-    out << "void";
-}
-
-void IntegerType::print(QTextStream &out) const {
-    if (size() == 8) {
-        if (isUnsigned()) {
-            out << "unsigned";
-        } else {
-            out << "signed";
-        }
-        out << " char";
-    } else {
-        if (isUnsigned()) {
-            out << 'u';
-        }
-        out << "int" << size() << "_t";
-    }
-}
-
-void FloatType::print(QTextStream &out) const {
-    out << "float" << size() << "_t";
-}
-
-void PointerType::print(QTextStream &out) const {
-    out << *pointeeType_ << '*';
-}
-
-void ArrayType::print(QTextStream &out) const {
-    out << *elementType() << '[' << length() << ']';
-}
-
-void StructType::print(QTextStream &out) const {
-    out << "struct " << typeDeclaration_->identifier();
-}
-
-} // namespace likec
+} // namespace dflow
+} // namespace ir
 } // namespace core
 } // namespace nc
 

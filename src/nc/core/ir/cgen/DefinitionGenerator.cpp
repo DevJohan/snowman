@@ -75,6 +75,7 @@
 #include <nc/core/likec/If.h>
 #include <nc/core/likec/InlineAssembly.h>
 #include <nc/core/likec/IntegerConstant.h>
+#include <nc/core/likec/FloatConstant.h>
 #include <nc/core/likec/LabelIdentifier.h>
 #include <nc/core/likec/LabelStatement.h>
 #include <nc/core/likec/Return.h>
@@ -827,6 +828,9 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
         case Term::INT_CONST: {
             return makeConstant(term, term->asConstant()->value());
         }
+        case Term::FLOAT_CONST: {
+            return makeConstantFloat(term, term->asConstantFloat()->value());
+        }
         case Term::INTRINSIC: {
             return doMakeExpression(term->as<Intrinsic>());
         }
@@ -852,6 +856,9 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const T
         }
         case Term::BINARY_OPERATOR: {
             return doMakeExpression(term->asBinaryOperator());
+        }
+        case Term::TYPE_CONVERSION: {
+            return doMakeExpression(term->asTypeConversion());
         }
         default: {
             unreachable();
@@ -1097,6 +1104,33 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const I
     return makeIntrinsicCall(QLatin1String("__intrinsic"), parent().makeType(parent().types().getType(intrinsic)));
 }
 
+std::unique_ptr<likec::Expression> DefinitionGenerator::doMakeExpression(const TypeConversion *conversion) {
+    auto makeType = [this](SmallBitSize size, int kind) -> const nc::core::likec::Type* {
+        switch (kind) {
+            case TypeConversion::SIGNED_INTEGER:
+                return tree().makeIntegerType(size, false);
+            case TypeConversion::UNSIGNED_INTEGER:
+                return tree().makeIntegerType(size, true);
+            case TypeConversion::FLOAT:
+                return tree().makeFloatType(size);
+            case TypeConversion::PACKED_BCD:  /* FALLTHROUGH */
+            case TypeConversion::UNKNOWN:
+                // TODO: make explicit alignment?
+                return tree().makeArrayType(tree().makeIntegerType(CHAR_BIT, false), size / CHAR_BIT);
+            default:
+                unreachable();
+                break;
+        }
+    };
+
+    std::unique_ptr<likec::Expression> operand(makeExpression(conversion->operand()));
+    return std::make_unique<likec::Typecast>(likec::Typecast::STATIC_CAST,
+            makeType(conversion->size(), conversion->toType()),
+            std::make_unique<likec::Typecast>(likec::Typecast::REINTERPRET_CAST,
+                    makeType(conversion->operand()->size(),
+                            conversion->fromType()), std::move(operand)));
+}
+
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeIntrinsicCall(QLatin1String name,
                                                                           const likec::Type *returnType) {
     return std::make_unique<likec::CallOperator>(std::make_unique<likec::UndeclaredIdentifier>(
@@ -1147,6 +1181,14 @@ std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstant(const Term 
 #endif
 
     return std::make_unique<likec::IntegerConstant>(value, tree().makeIntegerType(value.size(), type->isUnsigned()));
+}
+
+std::unique_ptr<likec::Expression> DefinitionGenerator::makeConstantFloat(const Term *term, const SizedFloatValue &value) {
+    const types::Type *type = parent().types().getType(term);
+
+    assert (type->isFloat());
+
+    return std::make_unique<likec::FloatConstant>(value, tree().makeFloatType(value.size()));
 }
 
 std::unique_ptr<likec::Expression> DefinitionGenerator::makeVariableAccess(const Term *term) {
@@ -1355,6 +1397,10 @@ bool DefinitionGenerator::canBeMoved(const Term *term, const Statement *destinat
             auto binary = term->asBinaryOperator();
             return canBeMoved(binary->left(), destination) &&
                    canBeMoved(binary->right(), destination);
+        }
+        case Term::TYPE_CONVERSION: {
+            auto conversion = term->asTypeConversion();
+            return canBeMoved(conversion->operand(), destination);
         }
     }
     unreachable();

@@ -25,6 +25,7 @@
 #include "Dataflow.h"
 
 #include "Value.h"
+#include "ArchValue.h"
 
 namespace nc {
 namespace core {
@@ -44,9 +45,9 @@ Value *Dataflow::getValue(const Term *term) {
 
     auto &result = term2value_[term];
     if (!result) {
-        result.reset(new Value(term->size()));
+        result.reset(new GenericValueStorage(Value(term->size())));
     }
-    return result.get();
+    return boost::get<Value>(result.get());
 }
 
 const Value *Dataflow::getValue(const Term *term) const {

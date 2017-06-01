@@ -26,6 +26,9 @@
 #include <nc/config.h>
 
 #include <boost/cstdint.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
+
+#include <nc/common/BitStorage.h>
 
 namespace nc {
 
@@ -35,13 +38,15 @@ typedef boost::int64_t ByteSize; ///< Signed integer for representing sizes in b
 typedef boost::int64_t BitAddr; ///< Signed integer for representing addresses in bits.
 typedef boost::int64_t BitSize; ///< Signed integer for representing sizes in bits.
 
-typedef int SmallByteSize; ///< Signed integer for representing small sizes in bytes (e.g. sizes of instructions).
+typedef int32_t SmallByteSize; ///< Signed integer for representing small sizes in bytes (e.g. sizes of instructions).
 
-typedef int SmallBitSize; ///< Signed integer for representing small sizes in bits (e.g. sizes of registers).
+typedef int32_t SmallBitSize; ///< Signed integer for representing small sizes in bits (e.g. sizes of registers).
 
 /* Note, that overflows of signed integers are undefined behaviour in C, C++. */
 typedef boost::uint64_t ConstantValue; ///< Unsigned integer for representing constant values.
 typedef boost::int64_t  SignedConstantValue; ///< Signed integer for representing constant values.
+
+typedef nc::BitStorage128 ArchExtendedConstantValue; ///< Data type for representing large architecture dependent values.
 
 typedef long double ConstantFloatValue; ///< Float type used for representing constant float values.
 

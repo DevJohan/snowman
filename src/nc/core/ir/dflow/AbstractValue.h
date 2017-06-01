@@ -10,7 +10,6 @@
 
 #include <nc/common/BitTwiddling.h>
 #include <nc/common/SizedValue.h>
-#include <nc/common/SizedFloatValue.h>
 #include <nc/common/Types.h>
 #include <nc/common/Unused.h>
 

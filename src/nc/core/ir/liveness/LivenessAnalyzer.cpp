@@ -176,6 +176,8 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
     switch (term->kind()) {
         case Term::INT_CONST:
             break;
+        case Term::FLOAT_CONST:
+            break;
         case Term::INTRINSIC:
             break;
         case Term::MEMORY_LOCATION_ACCESS: {
@@ -219,6 +221,11 @@ void LivenessAnalyzer::propagateLiveness(const Term *term) {
             const BinaryOperator *binary = term->asBinaryOperator();
             makeLive(binary->left());
             makeLive(binary->right());
+            break;
+        }
+        case Term::TYPE_CONVERSION: {
+            const TypeConversion *conversion = term->asTypeConversion();
+            makeLive(conversion->operand());
             break;
         }
         default:

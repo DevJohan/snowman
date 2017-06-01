@@ -31,6 +31,7 @@ set(SOURCES
     arch/x86/X86Registers.h
     arch/x86/udis86.h
     common/BitTwiddling.h
+    common/BitStorage.h
     common/Branding.cpp
     common/Branding.h
     common/ByteOrder.h
@@ -53,6 +54,7 @@ set(SOURCES
     common/SignalLogger.cpp
     common/SignalLogger.h
     common/SizedValue.h
+    common/SizedFloatValue.h
     common/StreamLogger.cpp
     common/StreamLogger.h
     common/StringToInt.cpp
@@ -177,6 +179,10 @@ set(SOURCES
     core/ir/cgen/SwitchContext.h
     core/ir/cgen/Utils.cpp
     core/ir/cgen/Utils.h
+    core/ir/dflow/AbstractValue.h
+    core/ir/dflow/ArchAbstractValue.h
+    core/ir/dflow/ArchValue.cpp
+    core/ir/dflow/ArchValue.h
     core/ir/dflow/Dataflow.cpp
     core/ir/dflow/Dataflow.h
     core/ir/dflow/DataflowAnalyzer.cpp
@@ -235,6 +241,8 @@ set(SOURCES
     core/likec/Expression.h
     core/likec/ExpressionStatement.cpp
     core/likec/ExpressionStatement.h
+    core/likec/FloatConstant.cpp
+    core/likec/FloatConstant.h
     core/likec/FunctionDeclaration.cpp
     core/likec/FunctionDeclaration.h
     core/likec/FunctionDefinition.cpp

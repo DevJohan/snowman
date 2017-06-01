@@ -41,11 +41,10 @@ namespace dflow {
  */
 class Value {
     AbstractValue abstractValue_; ///< Abstract value of the term, in the host byte order.
+    SignedConstantValue stackOffset_; ///< Offset to stack frame base (in bytes), if the value is a stack pointer.
 
     bool isStackOffset_; ///< Value is a stack pointer with a known offset from the frame base.
     bool isNotStackOffset_; ///< Value is not a stack pointer with a known offset from the frame base.
-
-    SignedConstantValue stackOffset_; ///< Offset to stack frame base (in bytes), if the value is a stack pointer.
 
     bool isProduct_; ///< Value was computed via multiplication.
     bool isNotProduct_; ///< Value was computed not via multiplication.

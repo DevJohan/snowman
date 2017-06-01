@@ -52,6 +52,7 @@ public:
         CALL_OPERATOR,          ///< Function call.
         FUNCTION_IDENTIFIER,    ///< Function identifier.
         INTEGER_CONSTANT,       ///< Integer constant.
+        FLOAT_CONSTANT,         ///< Float constant.
         LABEL_IDENTIFIER,       ///< Identifier of a label.
         MEMBER_ACCESS_OPERATOR, ///< Member access operator: a.b or a-&gt;b.
         STRING,                 ///< C string.

@@ -22,54 +22,25 @@
 // along with SmartDec decompiler.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "Types.h"
-
-#include <QTextStream>
-
-#include "StructTypeDeclaration.h"
+#include "FloatConstant.h"
 
 namespace nc {
 namespace core {
 namespace likec {
 
-void ErroneousType::print(QTextStream &out) const {
-    out << "<erroneous type>";
+FloatConstant::FloatConstant(const SizedFloatValue &value, const FloatType *type):
+    Expression(FLOAT_CONSTANT), value_(value), type_(type)
+{
+    assert(value.size() == type->size());
 }
 
-void VoidType::print(QTextStream &out) const {
-    out << "void";
-}
+FloatConstant::FloatConstant(ConstantFloatValue value, const FloatType *type):
+    Expression(FLOAT_CONSTANT), value_(SizedFloatValue(type->size(), value)), type_(type)
+{}
 
-void IntegerType::print(QTextStream &out) const {
-    if (size() == 8) {
-        if (isUnsigned()) {
-            out << "unsigned";
-        } else {
-            out << "signed";
-        }
-        out << " char";
-    } else {
-        if (isUnsigned()) {
-            out << 'u';
-        }
-        out << "int" << size() << "_t";
-    }
-}
-
-void FloatType::print(QTextStream &out) const {
-    out << "float" << size() << "_t";
-}
-
-void PointerType::print(QTextStream &out) const {
-    out << *pointeeType_ << '*';
-}
-
-void ArrayType::print(QTextStream &out) const {
-    out << *elementType() << '[' << length() << ']';
-}
-
-void StructType::print(QTextStream &out) const {
-    out << "struct " << typeDeclaration_->identifier();
+void FloatConstant::setValue(const SizedFloatValue &value) {
+    assert(value.size() == type_->size());
+    value_ = value;
 }
 
 } // namespace likec

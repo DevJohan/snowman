@@ -188,6 +188,7 @@ bool TypeAnalyzer::analyze(const Function *function) {
 void TypeAnalyzer::analyze(const Term *term) {
     switch (term->kind()) {
         case Term::INT_CONST: /* FALLTHROUGH */
+        case Term::FLOAT_CONST: /* FALLTHROUGH */
         case Term::INTRINSIC: /* FALLTHROUGH */
         case Term::MEMORY_LOCATION_ACCESS:
             break;
@@ -201,6 +202,9 @@ void TypeAnalyzer::analyze(const Term *term) {
             break;
         case Term::BINARY_OPERATOR:
             analyze(term->asBinaryOperator());
+            break;
+        case Term::TYPE_CONVERSION:
+            analyze(term->asTypeConversion());
             break;
         default:
             unreachable();
@@ -567,6 +571,37 @@ void TypeAnalyzer::analyze(const BinaryOperator *binary) {
             unreachable();
             break;
     }
+}
+
+void TypeAnalyzer::analyze(const TypeConversion *conversion) {
+    Type *type = types_.getType(conversion);
+    Type *operandType = types_.getType(conversion->operand());
+
+    auto markType = [](Type* type, int kind) {
+        switch (kind) {
+            case TypeConversion::SIGNED_INTEGER:
+                type->makeInteger();
+                type->makeSigned();
+                break;
+            case TypeConversion::UNSIGNED_INTEGER:
+                type->makeInteger();
+                type->makeUnsigned();
+                break;
+            case TypeConversion::FLOAT:
+                type->makeFloat();
+                break;
+            case TypeConversion::PACKED_BCD:  /* FALLTHROUGH */
+            case TypeConversion::UNKNOWN:
+                break;
+
+            default:
+                unreachable();
+                break;
+        }
+    };
+
+    markType(type,conversion->toType());
+    markType(operandType,conversion->fromType());
 }
 
 }}}} // namespace nc::core::ir::types

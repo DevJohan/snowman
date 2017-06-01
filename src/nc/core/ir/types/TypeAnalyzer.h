@@ -37,6 +37,7 @@ class Function;
 class Functions;
 class Term;
 class UnaryOperator;
+class TypeConversion;
 
 namespace calling {
     class Hooks;
@@ -150,6 +151,13 @@ private:
      * \param binary Valid pointer to a binary operator term.
      */
     void analyze(const BinaryOperator *binary);
+
+    /**
+     * Recomputes type of the given term.
+     *
+     * \param conversion Valid pointer to a type conversion term.
+     */
+    void analyze(const TypeConversion *conversion);
 };
 
 }}}} // namespace nc::core::ir::types

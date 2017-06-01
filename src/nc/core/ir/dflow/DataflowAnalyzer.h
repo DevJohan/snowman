@@ -48,6 +48,7 @@ class Statement;
 class Term;
 class UnaryOperator;
 class BinaryOperator;
+class TypeConversion;
 
 namespace dflow {
 
@@ -176,6 +177,14 @@ private:
      * \param definitions   Reaching definitions.
      */
     Value *computeValue(const BinaryOperator *binary, const ReachingDefinitions &definitions);
+
+    /**
+     * Executes a type conversion.
+     *
+     * \param[in] conversion Valid pointer to a TypeConversion instance.
+     * \param definitions    Reaching definitions.
+     */
+    Value *computeValue(const TypeConversion *conversion, const ReachingDefinitions &definitions);
 
     /**
      * Applies a unary operator to an abstract value.

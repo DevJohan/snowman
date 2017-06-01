@@ -34,6 +34,7 @@
 namespace nc {
 
 class SizedValue;
+class SizedFloatValue;
 
 namespace core {
 
@@ -55,6 +56,7 @@ class Jump;
 class JumpTarget;
 class Statement;
 class UnaryOperator;
+class TypeConversion;
 
 namespace cflow {
     class Graph;
@@ -301,6 +303,15 @@ private:
     std::unique_ptr<likec::Expression> doMakeExpression(const Intrinsic *intrinsic);
 
     /**
+     * Actually creates a LikeC expression for a given TypeConversion.
+     *
+     * \param[in] conversion Term to create expression from.
+     *
+     * \return Valid pointer to the created LikeC expression.
+     */
+    std::unique_ptr<likec::Expression> doMakeExpression(const TypeConversion *conversion);
+
+    /**
      * \param[in] name Name of an intrinsic function.
      * \param[in] returnType Valid pointer to a LikeC type.
      *
@@ -316,6 +327,14 @@ private:
      * \param[in] value Value of the constant.
      */
     std::unique_ptr<likec::Expression> makeConstant(const Term *term, const SizedValue &value);
+
+    /**
+     * Creates an float constant with given value from given term.
+     *
+     * \param[in] term Valid pointer to a term.
+     * \param[in] value Value of the constant.
+     */
+    std::unique_ptr<likec::Expression> makeConstantFloat(const Term *term, const SizedFloatValue &value);
 
     /**
      * Creates an access to a variable associated with a term.
